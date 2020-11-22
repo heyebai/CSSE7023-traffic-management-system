@@ -1,0 +1,235 @@
+package tms.network;
+
+import tms.intersection.Intersection;
+import tms.route.Route;
+import tms.sensors.*;
+import tms.util.*;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+
+public class NetworkInitialiser {
+    public static final String LINE_INFO_SEPARATOR = ":";
+    public static final String LINE_LIST_SEPARATOR = ",";
+
+    public NetworkInitialiser() {}
+
+    public static Network loadNetwork(String filename) throws IOException,
+            InvalidNetworkException {
+        Network network = new Network();
+        BufferedReader reader = null;
+        int lineNum = 0;
+        try {
+            reader = new BufferedReader(new FileReader(filename));
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
+
+        String line;
+        // comments lines
+        do {
+            line = reader.readLine();
+            nullAndBlankChecker(line);
+        } while (line.startsWith(";"));
+        // numIntersections
+        int numIntersections = toInt(line);
+        // numRoutes
+        line = reader.readLine();
+        nullAndBlankChecker(line);
+        int numRoutes = toInt(line);
+        // yellowTime
+        line = reader.readLine();
+        nullAndBlankChecker(line);
+        int yellowTime = toInt(line);
+        if (yellowTime < 1) {
+            throw new InvalidNetworkException();
+        }
+        network.setYellowTime​(yellowTime);
+        // Intersections
+        String[] info;
+        Map<String, String[]> lightInfo = new HashMap<String, String[]>();
+        do {
+            line = reader.readLine();
+            nullAndBlankChecker(line);
+            info = line.split(LINE_INFO_SEPARATOR);
+            if (info.length >= 4) {
+                toInt(info[info.length - 1]);
+                break;
+            } else if (info.length == 1) {
+                try {
+                    network.createIntersection(info[0]);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 3) {
+                try {
+                    network.createIntersection(info[0]);
+                    lightInfo.put(info[0], info);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else {
+                throw new InvalidNetworkException();
+            }
+        } while (info.length < 4);
+        if (numIntersections != network.getIntersections().size()) {
+            throw new InvalidNetworkException();
+        }
+        // Routes
+        String from = "", to = "";
+        int defaultSpeed, numSensors = 0, speedSignSpeed, threshold, routesCount = 0;
+        String[] stringData;
+        int[] intData;
+        DemoSensor demoSensor;
+        Route route = null;
+        Intersection intersectionFrom, intersectionTo;
+        do {
+            if (info.length == 3) {
+                threshold = toInt(info[1]);
+                if (threshold <= 0) {
+                    throw new InvalidNetworkException();
+                }
+                stringData = info[2].split(LINE_LIST_SEPARATOR);
+                intData = new int[stringData.length];
+                for (int i = 0; i < stringData.length; i++) {
+                    intData[i] = toInt(stringData[i]);
+                    if (intData[i] < 0) {
+                        throw new InvalidNetworkException();
+                    }
+                }
+                // create and add a sensor
+                if (info[0].equals("PP")) {
+                    demoSensor = new DemoPressurePad(intData, threshold);
+                } else if (info[0].equals("SC")) {
+                    demoSensor = new DemoSpeedCamera(intData, threshold);
+                } else if (info[0].equals("VC")) {
+                    demoSensor = new DemoVehicleCount(intData, threshold);
+                } else {
+                    throw new InvalidNetworkException();
+                }
+                try {
+                    network.addSensor(from, to, (Sensor) demoSensor);
+                    //route.addSensor((Sensor) demoSensor);
+                } catch (DuplicateSensorException | IntersectionNotFoundException | RouteNotFoundException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 4) {
+                from = info[0];
+                to = info[1];
+                defaultSpeed = toInt(info[2]);
+                numSensors = toInt(info[3]);
+                try {
+                    network.connectIntersections(from, to, defaultSpeed);
+                    //intersectionTo = network.findIntersection​(to);
+                    //intersectionFrom = network.findIntersection​(from);
+                    //route = intersectionTo.getConnection(intersectionFrom);
+                    routesCount++;
+                } catch (IntersectionNotFoundException | IllegalStateException | IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 5) {
+                from = info[0];
+                to = info[1];
+                defaultSpeed = toInt(info[2]);
+                numSensors = toInt(info[3]);
+                speedSignSpeed = toInt(info[4]);
+                if (speedSignSpeed < 0) {
+                    throw new InvalidNetworkException();
+                }
+                try {
+                    network.connectIntersections(from, to, defaultSpeed);
+                    network.addSpeedSign(from, to, speedSignSpeed);
+                    //intersectionTo = network.findIntersection​(to);
+                    //intersectionFrom = network.findIntersection​(from);
+                    //route = intersectionTo.getConnection(intersectionFrom);
+                    //route.addSpeedSign(speedSignSpeed);
+                    routesCount++;
+                } catch (IntersectionNotFoundException | IllegalStateException | IllegalArgumentException | RouteNotFoundException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else {
+                throw new InvalidNetworkException();
+            }
+            line = reader.readLine();
+            if (line == null || line.isBlank()) {
+//                try {
+//                    route = network.getConnection​(from, to);
+//                } catch (IntersectionNotFoundException | RouteNotFoundException e) {
+//                    throw new InvalidNetworkException();
+//                }
+//                if (route.getSensors().size() != numSensors) {
+//                    throw new InvalidNetworkException();
+//                }
+                checkNumSensors(network, from, to, numSensors);
+            } else {
+                info = line.split(LINE_INFO_SEPARATOR);
+                if (info.length != 3) {
+                    checkNumSensors(network, from, to, numSensors);
+                }
+            }
+        } while (line != null && !line.isBlank());
+        // check numRoutes
+        if (routesCount != numRoutes) {
+            throw new InvalidNetworkException();
+        }
+        // add traffic light
+        Set<String> intersectionIds = lightInfo.keySet();
+        Iterator<String> iter = intersectionIds.iterator();
+        String intersectionId;
+        int duration;
+        List<String> intersectionOrder;
+        while (iter.hasNext()) {
+            intersectionId = iter.next();
+            info = lightInfo.get(intersectionId);
+            duration = toInt(info[1]);
+            intersectionOrder = Arrays.asList(info[2].split(LINE_LIST_SEPARATOR));
+            try {
+                network.addLights(intersectionId, duration, intersectionOrder);
+            } catch (IntersectionNotFoundException | InvalidOrderException | IllegalArgumentException e) {
+                throw new InvalidNetworkException();
+            }
+        }
+        // check two newline characters
+        if (line == null) {
+        } else if (line.isBlank()) {
+            line = reader.readLine();
+            if (line != null) {
+                throw new InvalidNetworkException();
+            }
+        }
+        return network;
+    }
+
+    private static int toInt(String s) throws InvalidNetworkException{
+        int num;
+        try {
+            num = Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw new InvalidNetworkException();
+        }
+        return num;
+    }
+
+    private static void nullAndBlankChecker(String line)
+            throws InvalidNetworkException {
+        if (line == null || line.isBlank()) {
+            throw new InvalidNetworkException();
+        }
+    }
+
+    private static void checkNumSensors(Network network, String from, String to, int numSensors) throws InvalidNetworkException {
+        Route route;
+        try {
+            route = network.getConnection​(from, to);
+        } catch (IntersectionNotFoundException | RouteNotFoundException e) {
+            throw new InvalidNetworkException();
+        }
+        if (route.getSensors().size() != numSensors) {
+            throw new InvalidNetworkException();
+        }
+    }
+
+
+}

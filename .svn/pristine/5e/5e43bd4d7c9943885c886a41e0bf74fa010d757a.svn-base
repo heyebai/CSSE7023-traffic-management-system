@@ -1,0 +1,31 @@
+package tms.intersection;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+public class IntersectionLightsTest {
+    @Before
+    public void setUp() throws Exception {
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
+    @Test
+    public void getYellowTime() {
+    }
+
+    @Test
+    public void setDuration() {
+    }
+
+    @Test
+    public void oneSecond() {
+    }
+
+    @Test
+    public void testToString() {
+    }
+}

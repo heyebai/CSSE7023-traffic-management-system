@@ -1,0 +1,354 @@
+package tms.network;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import tms.util.InvalidNetworkException;
+
+import java.io.*;
+
+import static org.junit.Assert.*;
+
+public class NetworkInitialiserTest {
+    @Test
+    public void loadNetwork() {
+    }
+
+    @Before
+    public void setUp() throws Exception {
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
+    @Test
+    public void testLoadNetwork() {
+        /**
+         * correct situation
+         */
+        String networkString = "", line;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader("networks"+ File.separator +"demo.txt"));
+            do {
+                line = reader.readLine();
+                nullAndBlankChecker(line);
+            } while (line.startsWith(";"));
+            do {
+                if (line.startsWith(";")) {
+                    line = reader.readLine();
+                    continue;
+                }
+                networkString += line;
+                networkString += System.lineSeparator();
+                line = reader.readLine();
+            } while (line != null && !line.isBlank());
+
+            assertEquals(networkString, NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo.txt").toString() + System.lineSeparator());
+        } catch (IOException | InvalidNetworkException e) {
+            fail();
+        }
+
+        /**
+         * The number of intersections specified is not equal to the number
+         * of intersections read from the file.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo1.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo2.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The number of routes specified does not match the number read
+         * from the file.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo3.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo4.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The number of sensors specified for a route does not match the
+         * number read from the line below
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo5.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo6.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * An intersection referenced by a route does not exist
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo7.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * An intersection has an invalid ID according
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo8.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo9.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo10.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+//        try {
+//            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo11.txt");
+//            fail("expected exception was not occured.");
+//        } catch (IOException | InvalidNetworkException e) {
+//        }
+        /**
+         * Two or more routes have the same starting and ending intersections
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo11.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * A sensor type that is not one of the three provided demo sensors.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo12.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * A route contains sensors of the same type.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo13.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The traffic light yellow time is less than one (1).
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo14.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * A traffic light duration is less than the traffic light yellow time plus one (1)
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo15.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The traffic light order for an intersection is not a permutation of that intersection's incoming routes.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo16.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo17.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo18.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo19.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The traffic light order for an intersection is empty.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo20.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo21.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * route speeds
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo22.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * speed sign speeds
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo23.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * sensor thresholds (also, cannot be zero)
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo24.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo25.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * sensor data values
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo26.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The colon-delimited format is violated, i.e. there are
+         * more/fewer colons than expected.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo27.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo28.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo29.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo30.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo31.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo32.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * Any numeric value fails to be parsed
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo33.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo34.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo35.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo36.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo37.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo38.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo39.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * An empty line occurs where a non-empty line is expected.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo40.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo41.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo42.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo43.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo44.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+        /**
+         * The file contains any more than two (2) newline characters at the end of the file.
+         */
+        try {
+            NetworkInitialiser.loadNetwork("networks"+ File.separator +"demo45.txt");
+            fail("expected exception was not occured.");
+        } catch (IOException | InvalidNetworkException e) {
+        }
+    }
+
+    private static void nullAndBlankChecker(String line)
+            throws InvalidNetworkException {
+        if (line == null || line.isBlank()) {
+            throw new InvalidNetworkException();
+        }
+    }
+}

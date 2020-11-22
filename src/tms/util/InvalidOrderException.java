@@ -1,0 +1,37 @@
+package tms.util;
+
+/**
+ * Exception thrown when traffic lights are created with an invalid ordering of
+ * incoming routes, ie. the order is not a permutation of the intersection's
+ * list of incoming routes.
+ */
+public class InvalidOrderException extends Exception {
+
+    /**
+     * Constructs a normal InvalidOrderException with no error message or cause.
+     */
+    public InvalidOrderException() {
+        super();
+    }
+
+    /**
+     * Constructs an InvalidOrderException that contains a helpful message
+     * detailing why the exception occurred.
+     *
+     * @param message detail message
+     */
+    public InvalidOrderException(String message) {
+        super(message);
+    }
+
+    /**
+     * Constructs an InvalidOrderException that contains a helpful message
+     * detailing why the exception occurred and a cause of the exception.
+     *
+     * @param message detail message
+     * @param err cause of the exception
+     */
+    public InvalidOrderException(String message, Throwable err) {
+        super(message, err);
+    }
+}

@@ -1,0 +1,426 @@
+package tms.network;
+
+import tms.intersection.Intersection;
+import tms.route.Route;
+import tms.sensors.*;
+import tms.util.*;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * Helper class responsible for loading and initialising a saved network from
+ * a file.
+ */
+public class NetworkInitialiser {
+    /** Delimiter used to separate individual pieces of data on a single line */
+    public static final String LINE_INFO_SEPARATOR = ":";
+    /** Delimiter used to separate individual elements in a variable-length list
+     *  on a single line
+     */
+    public static final String LINE_LIST_SEPARATOR = ",";
+
+    /**
+     * NetworkInitialiser constructor
+     */
+    public NetworkInitialiser() {}
+
+    /**
+     * Loads a saved Network from the file with the given filename.
+     *
+     * @param filename name of the file from which to load a network
+     * @return the Network loaded from file
+     * @throws IOException any IOExceptions encountered when reading the file
+     * are bubbled up
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    public static Network loadNetwork(String filename) throws IOException,
+            InvalidNetworkException {
+        Network network = new Network();
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(filename));
+            String line;
+            // comments lines
+            do {
+                line = reader.readLine();
+                nullAndBlankChecker(line);
+            } while (line.startsWith(";"));
+            // numIntersections
+            int numIntersections = toInt(line);
+            // numRoutes
+            line = reader.readLine();
+            nullAndBlankChecker(line);
+            line = commentChecker(reader, line);
+            int numRoutes = toInt(line);
+            // yellowTime
+            line = reader.readLine();
+            nullAndBlankChecker(line);
+            line = commentChecker(reader, line);
+            int yellowTime = toInt(line);
+            if (yellowTime < 1) {
+                throw new InvalidNetworkException();
+            }
+            network.setYellowTime​(yellowTime);
+            // Intersections
+            String[] info = new String[]{};
+            Map<String, String[]> lightInfo = new HashMap<String, String[]>();
+            info = intersectionInitialiser(reader, network, numIntersections,
+                    lightInfo);
+            // Routes
+            line = routeInitialiser(reader, info, network, numRoutes);
+            // add traffic light
+            trafficLightInitialiser(lightInfo, info, network);
+            if (line == null) {
+                reader.close();
+            } else if (line.isBlank()) {
+//                line = reader.readLine();
+//                if (line != null) {
+                    throw new InvalidNetworkException();
+//                }
+//                reader.close();
+            }
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
+        return network;
+    }
+
+    /**
+     * A helper method to load intersections in the network.
+     *
+     * @param reader a BufferedReader to read lines from the file
+     * @param network the loading network
+     * @param numIntersections the number of intersections read from the file
+     * @param lightInfo a map to store traffic light information
+     * @return the information read form a line
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     * @throws IOException any IOExceptions encountered when reading the file
+     * are bubbled up
+     */
+    private static String[] intersectionInitialiser(BufferedReader reader,
+                                                    Network network,
+                                                    int numIntersections,
+                                                Map<String, String[]> lightInfo)
+            throws InvalidNetworkException, IOException {
+        String[] info = new String[]{};
+        String line;
+        do {
+            line = reader.readLine();
+//            line = commentChecker(reader, line);
+            if (line == null || line.isBlank()) {
+                info = new String[]{};
+                break;
+            }
+            line = commentChecker(reader, line);
+            if (line == null || line.isBlank()) {
+                info = new String[]{};
+                break;
+            }
+            intersectionRegex(line);
+            info = line.split(LINE_INFO_SEPARATOR);
+            if (info.length >= 4) {
+                toInt(info[info.length - 1]);
+                break;
+            } else if (info.length == 1) {
+                try {
+                    network.createIntersection(info[0]);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 3) {
+                try {
+                    network.createIntersection(info[0]);
+                    lightInfo.put(info[0], info);
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else {
+                throw new InvalidNetworkException();
+            }
+            //} while (info.length < 4);
+        } while (line != null && !line.isBlank());
+        if (numIntersections != network.getIntersections().size()) {
+            throw new InvalidNetworkException();
+        }
+        return info;
+    }
+
+    /**
+     * Check valid line for intersection
+     *
+     * @param line the string read by BufferedReader
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void intersectionRegex(String line)
+            throws InvalidNetworkException {
+        // Check the line matches the intersection string pattern
+        // "anything except ':' + ':' + a number + ':' + anything except ':'" or
+        // "anything except ':'"
+        if (!(line.matches("[^:]+:[0-9]+:[^:]+") ||
+                line.matches("[^:]+"))) {
+            // check the line matches the route string patten
+            // "anything except ':' + ':' + anything except ':' + ':' + a number
+            // + ':' + a number" or
+            // "anything except ':' + ':' + anything except ':' + ':' + a number
+            // + ':' + a number + ':' + a number"
+            if (line.matches("[^:]+:[^:]+:[0-9]+:[0-3]") ||
+                    line.matches("[^:]+:[^:]+:[0-9]+:[0-3]:[0-9]+")) {
+            } else {
+                throw new InvalidNetworkException();
+            }
+        }
+    }
+
+    /**
+     * Check valid line for route and sensor
+     *
+     * @param line the string read by BufferedReader
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void routeRegex(String line) throws InvalidNetworkException {
+        if (!(line.matches("[^:]+:[^:]+:[0-9]+:[0-3]") ||
+                line.matches("[^:]+:[^:]+:[0-9]+:[0-3]:[0-9]+") ||
+                line.matches("[^:]+:[0-9]+:[^:]+"))) {
+            throw new InvalidNetworkException();
+        }
+    }
+
+    /**
+     * check whether the line is comment
+     *
+     * @param reader a BufferedReader to read lines from the file
+     * @param line the string read by BufferedReader
+     * @return the string read by BufferedReader
+     * @throws IOException any IOExceptions encountered when reading the file
+     * are bubbled up
+     */
+    private static String commentChecker(BufferedReader reader, String line)
+            throws IOException {
+        while (line.startsWith(";")) {
+            line = reader.readLine();
+            if (line == null) {
+                return null;
+            }
+        }
+        return line;
+    }
+
+    /**
+     * a helper method to load sensors in the network
+     *
+     * @param info the string array to store information
+     * @param network the loading network
+     * @param from ID of origin intersection
+     * @param to ID of destination intersection
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void sensorInitialiser(String[] info, Network network,
+                                          String from, String to)
+            throws InvalidNetworkException {
+        int threshold = toInt(info[1]);
+        DemoSensor demoSensor;
+        if (threshold <= 0) {
+            throw new InvalidNetworkException();
+        }
+        String[] stringData = info[2].split(LINE_LIST_SEPARATOR);
+        int[] intData = new int[stringData.length];
+        for (int i = 0; i < stringData.length; i++) {
+            intData[i] = toInt(stringData[i]);
+            if (intData[i] < 0) {
+                throw new InvalidNetworkException();
+            }
+        }
+        // create and add a sensor
+        if (info[0].equals("PP")) {
+            demoSensor = new DemoPressurePad(intData, threshold);
+        } else if (info[0].equals("SC")) {
+            demoSensor = new DemoSpeedCamera(intData, threshold);
+        } else if (info[0].equals("VC")) {
+            demoSensor = new DemoVehicleCount(intData, threshold);
+        } else {
+            throw new InvalidNetworkException();
+        }
+        try {
+            network.addSensor(from, to, (Sensor) demoSensor);
+            //route.addSensor((Sensor) demoSensor);
+        } catch (DuplicateSensorException | IntersectionNotFoundException | RouteNotFoundException e) {
+            throw new InvalidNetworkException();
+        }
+    }
+
+    /**
+     * a helper method to load routes in the network
+     *
+     * @param reader a BufferedReader to read lines from the file
+     * @param info the string array to store information
+     * @param network the loading network
+     * @param numRoutes the number of routes read from the file
+     * @return the line read by BufferedReader
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     * @throws IOException any IOExceptions encountered when reading the file
+     * are bubbled up
+     */
+    private static String routeInitialiser(BufferedReader reader, String[] info,
+                                         Network network, int numRoutes)
+            throws InvalidNetworkException, IOException {
+        int defaultSpeed, numSensors = 0, speedSignSpeed, routesCount = 0;
+        String line = null, from = "", to = "";
+        do {
+            if (info.length == 3) {
+                sensorInitialiser(info, network, from, to);
+            } else if (info.length == 4) {
+                from = info[0];
+                to = info[1];
+                defaultSpeed = toInt(info[2]);
+                numSensors = toInt(info[3]);
+                try {
+                    network.connectIntersections(from, to, defaultSpeed);
+                    routesCount++;
+                } catch (IntersectionNotFoundException | IllegalStateException |
+                        IllegalArgumentException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 5) {
+                from = info[0];
+                to = info[1];
+                defaultSpeed = toInt(info[2]);
+                numSensors = toInt(info[3]);
+                speedSignSpeed = toInt(info[4]);
+                if (speedSignSpeed < 0) {
+                    throw new InvalidNetworkException();
+                }
+                try {
+                    network.connectIntersections(from, to, defaultSpeed);
+                    network.addSpeedSign(from, to, speedSignSpeed);
+                    routesCount++;
+                } catch (IntersectionNotFoundException | IllegalStateException |
+                        IllegalArgumentException | RouteNotFoundException e) {
+                    throw new InvalidNetworkException();
+                }
+            } else if (info.length == 0) {
+                break;
+            } else {
+                throw new InvalidNetworkException();
+            }
+            line = reader.readLine();
+            if (line == null || line.isBlank()) {
+                checkNumSensors(network, from, to, numSensors);
+            } else {
+                line = commentChecker(reader, line);
+                if (line == null || line.isBlank()) {
+                    checkNumSensors(network, from, to, numSensors);
+                } else {
+                    routeRegex(line);
+                    info = line.split(LINE_INFO_SEPARATOR);
+                    if (info.length != 3) {
+                        checkNumSensors(network, from, to, numSensors);
+                    }
+                }
+            }
+        } while (line != null && !line.isBlank());
+        if (routesCount != numRoutes) {
+            throw new InvalidNetworkException();
+        }
+        return line;
+    }
+
+    /**
+     * a helper method to load traffic lights in the network
+     *
+     * @param lightInfo a map to store traffic light information
+     * @param info the string array to store information
+     * @param network the loading network
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void trafficLightInitialiser(Map<String, String[]> lightInfo,
+                                                String[] info, Network network)
+            throws InvalidNetworkException {
+        Set<String> intersectionIds = lightInfo.keySet();
+        Iterator<String> iter = intersectionIds.iterator();
+        String intersectionId;
+        int duration;
+        List<String> intersectionOrder;
+        while (iter.hasNext()) {
+            intersectionId = iter.next();
+            info = lightInfo.get(intersectionId);
+            duration = toInt(info[1]);
+            intersectionOrder = Arrays.asList(
+                    info[2].split(LINE_LIST_SEPARATOR));
+            try {
+                network.addLights(intersectionId, duration, intersectionOrder);
+            } catch (IntersectionNotFoundException | InvalidOrderException |
+                    IllegalArgumentException e) {
+                throw new InvalidNetworkException();
+            }
+        }
+    }
+
+    /**
+     * a helper method to parse string to int
+     *
+     * @param s the string needed to parse to int
+     * @return the int parsed from string
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static int toInt(String s) throws InvalidNetworkException{
+        int num;
+        try {
+            num = Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw new InvalidNetworkException();
+        }
+        return num;
+    }
+
+    /**
+     * a helper method to check whether the new line read by BufferedReader is
+     * null or blank
+     *
+     * @param line the string read by BufferedReader
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void nullAndBlankChecker(String line)
+            throws InvalidNetworkException {
+        if (line == null || line.isBlank()) {
+            throw new InvalidNetworkException();
+        }
+    }
+
+    /**
+     * a helper method to check whether the number of sensors read from file is
+     * equal to the number of sensors added to the routes
+     *
+     * @param network the loading network
+     * @param from ID of origin intersection
+     * @param to ID of destination intersection
+     * @param numSensors the number of sensors read from the file
+     * @throws InvalidNetworkException if the file format of the given file is
+     * invalid
+     */
+    private static void checkNumSensors(Network network, String from, String to,
+                                        int numSensors)
+            throws InvalidNetworkException {
+        Route route;
+        try {
+            route = network.getConnection​(from, to);
+        } catch (IntersectionNotFoundException | RouteNotFoundException e) {
+            throw new InvalidNetworkException();
+        }
+        if (route.getSensors().size() != numSensors) {
+            throw new InvalidNetworkException();
+        }
+    }
+}

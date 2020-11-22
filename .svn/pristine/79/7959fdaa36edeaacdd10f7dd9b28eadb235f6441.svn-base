@@ -1,0 +1,85 @@
+package tms.intersection;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import tms.route.Route;
+import tms.route.TrafficLight;
+import tms.route.TrafficSignal;
+
+
+import static org.junit.Assert.*;
+
+public class IntersectionLightsTest {
+    private int yellowTime;
+    private int duration;
+    private IntersectionLights intersectionLights;
+    private Intersection intersectionX;
+    private Intersection intersectionY;
+    private Intersection intersectionZ;
+    private Route routeXY;
+    private Route routeZY;
+
+    @Before
+    public void setUp() throws Exception {
+        intersectionX = new Intersection("X");
+        intersectionY = new Intersection("Y");
+        intersectionZ = new Intersection("Z");
+        intersectionY.addConnection(intersectionX, 60);
+        intersectionY.addConnection(intersectionZ, 60);
+        routeXY = intersectionY.getConnection(intersectionX);
+        routeZY = intersectionY.getConnection(intersectionZ);
+        routeXY.addTrafficLight();
+        routeZY.addTrafficLight();
+        yellowTime = 1;
+        duration = 2;
+        intersectionLights = new IntersectionLights(intersectionY.getConnections(), yellowTime, duration);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
+    @Test
+    public void getYellowTime() {
+        assertEquals(1, intersectionLights.getYellowTime());
+    }
+
+    @Test
+    public void setDuration() {
+        assertEquals(TrafficSignal.GREEN, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.YELLOW, routeXY.getTrafficLight().getSignal());
+        intersectionLights.setDuration(3);
+        assertEquals(TrafficSignal.GREEN, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.GREEN, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.YELLOW, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.RED, routeXY.getTrafficLight().getSignal());
+    }
+
+    @Test
+    public void oneSecond() {
+        assertEquals(TrafficSignal.GREEN, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.YELLOW, routeXY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.RED, routeXY.getTrafficLight().getSignal());
+        assertEquals(TrafficSignal.GREEN, routeZY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.YELLOW, routeZY.getTrafficLight().getSignal());
+        intersectionLights.oneSecond();
+        assertEquals(TrafficSignal.RED, routeZY.getTrafficLight().getSignal());
+        assertEquals(TrafficSignal.GREEN, routeXY.getTrafficLight().getSignal());
+//        intersectionLights.oneSecond();
+//        assertEquals(TrafficSignal.YELLOW, routeXY.getTrafficLight().getSignal());
+//        assertEquals(TrafficSignal.RED, routeZY.getTrafficLight().getSignal());
+    }
+
+    @Test
+    public void testToString() {
+        assertEquals("2:X,Z", intersectionLights.toString());
+    }
+}

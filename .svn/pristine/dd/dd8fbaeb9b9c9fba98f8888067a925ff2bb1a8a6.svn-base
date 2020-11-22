@@ -1,0 +1,30 @@
+package tms.congestion;
+
+import tms.sensors.Sensor;
+
+import java.util.List;
+
+public class AveragingCongestionCalculator implements CongestionCalculator {
+
+    private List<Sensor> sensors;
+
+    public AveragingCongestionCalculator(List<Sensor> sensors) {
+        this.sensors = sensors;
+    }
+
+    @Override
+    public int calculateCongestion() {
+        int averageCongestion;
+        int congestion = 0;
+        if (sensors.isEmpty()) {
+            averageCongestion = 0;
+        } else {
+            for (Sensor sensor : sensors) {
+                congestion += sensor.getCongestion();
+            }
+            float floatCongestion = (float) congestion / sensors.size();
+            averageCongestion = Math.round(floatCongestion);
+        }
+        return averageCongestion;
+    }
+}

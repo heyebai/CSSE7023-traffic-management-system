@@ -1,0 +1,38 @@
+package tms.intersection;
+
+import tms.route.Route;
+import tms.route.TrafficSignal;
+import tms.util.TimedItem;
+
+import java.util.List;
+
+public class IntersectionLights implements TimedItem {
+    private List<Route> connections;
+    private int yellowTime;
+    private int duration;
+    private int secondsPassed;
+
+    public IntersectionLights(List<Route> connections, int yellowTime, int duration) {
+        this.connections = connections;
+        this.yellowTime = yellowTime;
+        this.duration = duration;
+        if (this.connections.get(0).getTrafficLight() == null) {
+            this.connections.get(0).addTrafficLight();
+        }
+        this.connections.get(0).setSignal(TrafficSignal.GREEN);
+    }
+
+    public int getYellowTime() {
+        return this.yellowTime;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+
+    }
+
+    @Override
+    public void oneSecond() {
+
+    }
+}
